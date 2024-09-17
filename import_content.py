@@ -5,49 +5,50 @@ import json
 import fnmatch
 
 SOURCE_DIR = 'content'
+LANGUAGES = ['de', 'fr', 'it']
 OUTPUT = 'src/assets/articles.json'
 
 
 def load():
-    articles = []
-    files = os.listdir(SOURCE_DIR)
-    markdown_files = [f for f in files if fnmatch.fnmatch(f, '*.md')]
-    markdown_files.sort()
+    """ Load articales into dictionary """
+    articles = {lang: [] for lang in LANGUAGES}
+    for lang in LANGUAGES:
+        files = os.listdir(os.path.join(SOURCE_DIR, lang))
+        markdown_files = [f for f in files if fnmatch.fnmatch(f, '*.md')]
+        markdown_files.sort()
+        for article in markdown_files:
+            with open(os.path.join(SOURCE_DIR, lang, article)) as md_file:
+                content = md_file.read()
+                title = content.splitlines()[0]
+                article_id = article[0:2]
 
-    for article in markdown_files:
-        with open(os.path.join(SOURCE_DIR, article)) as f:
-            content = f.read()
-            title = content.splitlines()[0]
-            slug = article[3:-3].lower()
-            img_name = article.replace('.md', '.jpg')
-            img = os.path.join('images', 'titles', img_name)
-
-            articles.append({
-                "title": title,
-                "slug": slug,
-                "img": img,
-                "content": content,
-            })
+                articles[lang].append({
+                    "id": article_id,
+                    "title": title,
+                    "content": content,
+                })
 
     return articles
 
 
 def overview(articles):
+    """ Show number of imported articles per language """
     print()
-    print('IMPORTIERTE INHALTE')
+    print('IMPORTIERTE ARTIKEL')
     print('###################')
     print()
-    for a in articles:
-        print('- %s' % a['slug'])
+    for (lang, articles) in articles.items():
+        print(f'{lang}: {len(articles)}')
     print()
 
 
 def export(articles):
+    """ Update articles.json in PWA src """
     with open(OUTPUT, 'w') as output:
         json.dump(articles, output, indent=4, ensure_ascii=False)
 
 
 if __name__ == '__main__':
-    articles = load()
-    overview(articles)
-    export(articles)
+    all_articles = load()
+    overview(all_articles)
+    export(all_articles)
